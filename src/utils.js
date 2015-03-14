@@ -69,7 +69,7 @@ exports.fetchEvent = function (groupName, issueNumber, callback) {
     }
     var ev = res.body;
     var commentsUrl = issueUrl + '/comments';
-    request.get(issueUrl).set('Authorization', tokenHeader).end(function (err, res) {
+    request.get(commentsUrl).set('Authorization', tokenHeader).end(function (err, res) {
       if (err) {
         return callback(null, ev);
       }

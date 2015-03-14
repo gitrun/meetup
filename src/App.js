@@ -4,6 +4,7 @@ var Github = require('github-api');
 var ReactGridLayout = require('react-grid-layout');
 var StyleSheet = require('react-style')
 
+
 var Remarkable = require('remarkable');
 var md = new Remarkable();
 
@@ -14,6 +15,7 @@ var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 
 var EventPanel = require('./EventPanel');
+var DiscussionPanel = require('./DiscussionPanel');
 
 var oauth = require('./oauth');
 
@@ -97,6 +99,7 @@ var Group = React.createClass({
   getInitialState: function () {
     return {
       events: [],
+      questions: [],
       group: {},
       selectedTab: 'events'
     }
@@ -112,6 +115,11 @@ var Group = React.createClass({
       this.setState({events: events});
     }.bind(this));
 
+    utils.fetchEvents(this.getParams().groupName, 'question', function(err, questions) {
+      console.log('questions', questions);
+      this.setState({questions: questions});
+    }.bind(this));
+
     utils.fetchGroup(this.github, this.getParams().groupName, function (err, group) {
       console.log('done', err, group);
       this.setState({group: group});
@@ -124,15 +132,17 @@ var Group = React.createClass({
     });
   },
   render: function (){
-    var events = this.state.events;
+    var events = this.state.events || [];
+    var questions = this.state.questions || [];
     var eventsList = events.map(function (ev) {
-      var eventDescription = md.render(ev.body);
       return (<EventPanel ev={ev} group={this.state.group}/>)
     }.bind(this));
-    var discussionsList = [];
+    var discussionsList = questions.map(function (question) {
+      return (<DiscussionPanel discussion={question} group={this.state.group}/>)
+    }.bind(this));
     var pollsList = [];
     var content;
-    if (Object.keys(this.state.group).length ) {
+    if (Object.keys(this.state.group || {}).length ) {
       content = <div>
                   <link href={this.state.group.cssurl} rel="stylesheet"/>
                   <style>
@@ -147,13 +157,13 @@ var Group = React.createClass({
                     </ul>
                   <div className="tab-content">
                     <div  className={this.state.selectedTab === 'events' ? 'tab-pane fade active in' : 'tab-pane'}>
-                    {eventsList}
+                      {eventsList}
                     </div>
                     <div className={this.state.selectedTab === 'discussions' ? 'tab-pane fade active in' : 'tab-pane'}>
-                      <p>Coming soon</p>
+                      {discussionsList}
                     </div>
                     <div className={this.state.selectedTab === 'polls' ? 'tab-pane fade active in' : 'tab-pane'}>
-                      <p>Coming soon</p>
+                      <p>Coming soon..</p>
                     </div>
                   </div>
                 </div>
@@ -189,7 +199,7 @@ var Event = React.createClass({
 
   componentDidMount: function () {
     utils.fetchEvent(this.getParams().groupName, this.getParams().eventId, function (err, ev) {
-      console.log('done', err, ev);
+      console.log('fulll event', err, ev);
       this.setState({ev: ev});
     }.bind(this));
     utils.fetchGroup(this.github, this.getParams().groupName, function (err, group) {
@@ -198,8 +208,20 @@ var Event = React.createClass({
     }.bind(this))
   },
 
+  getAttendees: function () {
+    var comments = this.state.ev.comments || [];
+    var attending = comments.filter(function (comment) {
+      return comment.body.indexOf('+1') > -1;
+    });
+    var attendees = attending.map(function (comment) {
+      return comment.user;
+    });
+    return attendees;
+  },
+
   render: function (){
     var content;
+    var attendees = this.getAttendees();
     if (Object.keys(this.state.group).length > 0 && Object.keys(this.state.ev).length > 0) {
       content = <div>
                   <link href={this.state.group.cssurl} rel="stylesheet"/>
@@ -208,6 +230,7 @@ var Event = React.createClass({
                   </style>
                   <GroupHeader group={this.state.group}/>
                   <EventPanel ev={this.state.ev} group={this.state.group}/>
+                  <Attendees attendees={attendees}/>
                 </div>
     } else {
       content = <div className="progress">
@@ -224,6 +247,24 @@ var Event = React.createClass({
 
 
 
+var Attendees = React.createClass({
+  render: function () {
+    console.log('attendees', this.props.attendees);
+    return (
+      <div className="btn-group btn-group-justified">
+      {
+        this.props.attendees.map(function(attendee) {
+          return (
+            <button style={{width: 60}}type="button" className="btn btn-default" data-container="body" data-toggle="popover" data-placement="top" data-content={attendee.login} data-original-title="" title={attendee.login}>
+              <img src={attendee.avatar_url} styles={{width: 30}}/>
+            </button>
+            )
+        })
+      }
+      </div>
+      )
+  }
+});
 
 
 var GroupHeader = React.createClass({
@@ -232,7 +273,7 @@ var GroupHeader = React.createClass({
     return (
       <div>
         <button className="btn btn-success pull-right">Join</button>
-        <h2>{this.props.group.name}</h2>
+        <h2><Link to="group" params={{groupName: this.props.group.name}}> {this.props.group.name}</Link></h2>
         <p>{this.props.group.description}</p>
       </div>
       )
@@ -245,6 +286,7 @@ var routes = (
     <DefaultRoute handler={Index}/>
     <Route name="group" path="/groups/:groupName/" handler={Group} />
     <Route name="event" path="/groups/:groupName/events/:eventId/" handler={Event} />
+    <Route name="discussion" path="/groups/:groupName/discussions/:discussionId/" handler={Event} />
 
   </Route>
 );

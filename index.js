@@ -7,6 +7,7 @@ app.use(express.static(__dirname + '/public'));
 
 app.use('/groups/:name', express.static(__dirname + '/public'));
 app.use('/groups/:name/events/:id', express.static(__dirname + '/public'));
+app.use('/groups/:name/discussions/:id', express.static(__dirname + '/public'));
 app.use('/groups', express.static(__dirname + '/public'));
 
 

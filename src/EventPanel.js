@@ -10,6 +10,10 @@ var EventPanel = React.createClass({
 
   render: function () {
       var ev = this.props.ev;
+      var date = 'not defined';
+      if(ev.milestone && ev.milestone.due_on) {
+        date = ev.milestone.due_on;
+      }
       var eventDescription = md.render(ev.body);
       return (
             <div key={ev.id} className="panel panel-default">
@@ -18,7 +22,7 @@ var EventPanel = React.createClass({
                   <span>{ev.title}</span>
                 </Link>
                 <strong styles={{float:'right'}}>
-                  <FormattedDate value={ev.milestone.due_on} day="numeric"
+                  <FormattedDate value={date} day="numeric"
                   month="long"
                   year="numeric" /></strong>
               </div>
