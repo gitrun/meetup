@@ -62,7 +62,9 @@
 
 	var EventPanel = __webpack_require__(1);
 	var DiscussionPanel = __webpack_require__(2);
-
+	var Attendees = __webpack_require__(327);
+	var Discussion = __webpack_require__(328);
+	var GroupHeader = __webpack_require__(329);
 	var oauth = __webpack_require__(3);
 
 
@@ -293,46 +295,17 @@
 
 
 
-	var Attendees = React.createClass({displayName: "Attendees",
-	  render: function () {
-	    console.log('attendees', this.props.attendees);
-	    return (
-	      React.createElement("div", {className: "btn-group btn-group-justified"}, 
-	      
-	        this.props.attendees.map(function(attendee) {
-	          return (
-	            React.createElement("button", {style: {width: 60}, type: "button", className: "btn btn-default", "data-container": "body", "data-toggle": "popover", "data-placement": "top", "data-content": attendee.login, "data-original-title": "", title: attendee.login}, 
-	              React.createElement("img", {src: attendee.avatar_url, styles: {width: 30}})
-	            )
-	            )
-	        })
-	      
-	      )
-	      )
-	  }
-	});
 
 
-	var GroupHeader = React.createClass({displayName: "GroupHeader",
 
-	  render: function () {
-	    return (
-	      React.createElement("div", null, 
-	        React.createElement("button", {className: "btn btn-success pull-right"}, "Join"), 
-	        React.createElement("h2", null, React.createElement(Link, {to: "group", params: {groupName: this.props.group.name}}, " ", this.props.group.name)), 
-	        React.createElement("p", null, this.props.group.description)
-	      )
-	      )
-	  }
 
-	});
 
 	var routes = (
 	  React.createElement(Route, {handler: App, path: "/"}, 
 	    React.createElement(DefaultRoute, {handler: Index}), 
 	    React.createElement(Route, {name: "group", path: "/groups/:groupName/", handler: Group}), 
 	    React.createElement(Route, {name: "event", path: "/groups/:groupName/events/:eventId/", handler: Event}), 
-	    React.createElement(Route, {name: "discussion", path: "/groups/:groupName/discussions/:discussionId/", handler: Event})
+	    React.createElement(Route, {name: "discussion", path: "/groups/:groupName/discussions/:discussionId/", handler: Discussion})
 
 	  )
 	);
@@ -423,7 +396,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	  token: "a727053c2b254c0822f4acbf9a69dcce7ce211bb",
+	  token: "d6f56ad4bb3f201b277f6c0d84b5417e14581fe4",
 	  auth: "oauth"
 	};
 
@@ -45164,6 +45137,178 @@
 	module.exports = toArray;
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(23)))
+
+/***/ },
+/* 327 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(7);
+
+	var Attendees = React.createClass({displayName: "Attendees",
+	  render: function () {
+	    console.log('attendees', this.props.attendees);
+	    return (
+	      React.createElement("div", {className: "btn-group btn-group-justified"}, 
+	      
+	        this.props.attendees.map(function(attendee) {
+	          return (
+	            React.createElement("button", {style: {width: 60}, type: "button", className: "btn btn-default", "data-container": "body", "data-toggle": "popover", "data-placement": "top", "data-content": attendee.login, "data-original-title": "", title: attendee.login}, 
+	              React.createElement("img", {src: attendee.avatar_url, styles: {width: 30}})
+	            )
+	            )
+	        })
+	      
+	      )
+	      )
+	  }
+	});
+
+	module.exports = Attendees;
+
+/***/ },
+/* 328 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var async = __webpack_require__(8);
+	var React = __webpack_require__(7);
+	var Github = __webpack_require__(9);
+	var ReactGridLayout = __webpack_require__(5);
+	var StyleSheet = __webpack_require__(10)
+
+	var ReactIntl = __webpack_require__(13);
+	var FormattedDate = ReactIntl.FormattedDate;
+
+	var Remarkable = __webpack_require__(6);
+	var md = new Remarkable();
+
+	var Router = __webpack_require__(11);
+	var Route = Router.Route;
+	var DefaultRoute = Router.DefaultRoute;
+	var Link = Router.Link;
+	var RouteHandler = Router.RouteHandler;
+
+	var EventPanel = __webpack_require__(1);
+	var DiscussionPanel = __webpack_require__(2);
+	var Attendees = __webpack_require__(327);
+	var GroupHeader = __webpack_require__(329);
+	var oauth = __webpack_require__(3);
+
+
+	var utils = __webpack_require__(4);
+
+	var Discussion = React.createClass({displayName: "Discussion",
+	  mixins: [ Router.State ],
+
+	  getInitialState: function () {
+	    return {
+	      discussion: {},
+	      group: {}
+	    }
+	  },
+
+	  componentWillMount: function () {
+	    this.github = new Github(oauth);
+	    this.githubUser = this.github.getUser();
+	  },
+
+	  componentDidMount: function () {
+	    utils.fetchEvent(this.getParams().groupName, this.getParams().discussionId, function (err, discussion) {
+	      console.log('fulll discussion', err, discussion);
+	      this.setState({discussion: discussion});
+	    }.bind(this));
+	    utils.fetchGroup(this.github, this.getParams().groupName, function (err, group) {
+	      console.log('done', err, group);
+	      this.setState({group: group});
+	    }.bind(this))
+	  },
+
+	  getCommenters: function () {
+	    var comments = this.state.discussion.comments || [];
+	    var attendees = comments.map(function (comment) {
+	      return comment.user;
+	    });
+	    return attendees;
+	  },
+
+	  render: function (){
+	    var content;
+	    var comments = this.state.discussion.comments || [];
+	    var attendees = this.getCommenters();
+	    if (Object.keys(this.state.group).length > 0 && Object.keys(this.state.discussion).length > 0) {
+	      content = React.createElement("div", null, 
+	                  React.createElement("link", {href: this.state.group.cssurl, rel: "stylesheet"}), 
+	                  React.createElement("style", null, 
+	                    this.state.group.css
+	                  ), 
+	                  React.createElement(GroupHeader, {group: this.state.group}), 
+	                  React.createElement(DiscussionPanel, {discussion: this.state.discussion, group: this.state.group}), 
+	                  React.createElement(Attendees, {attendees: attendees}), 
+	                  React.createElement(Comments, {comments: comments})
+	                )
+	    } else {
+	      content = React.createElement("div", {className: "progress"}, 
+	                React.createElement("div", {className: "progress-bar"})
+	                )
+	    }
+	    return (React.createElement("div", {className: "row col-md-8 col-md-offset-2"}, 
+	            content
+	            )
+
+	            )
+	  }
+	});
+
+	var Comments = React.createClass({displayName: "Comments",
+
+	  render: function () {
+	    var comments = this.props.comments;
+	    var content = comments.map(function(comment){
+	      var body = md.render(comment.body);
+	      return (
+	        React.createElement("div", {className: "panel panel-default"}, 
+	          React.createElement("div", {className: "panel-heading"}, 
+	          React.createElement("img", {styles: {width: 30, marginRight: 15}, src: comment.user.avatar_url}), 
+	          React.createElement("strong", null, comment.user.login), 
+	          React.createElement("strong", {styles: {float:'right'}}, 
+	            React.createElement(FormattedDate, {value: comment.updated_at, day: "numeric", 
+	            month: "long", 
+	            year: "numeric"}))
+	          ), 
+	          React.createElement("div", {className: "panel-body", dangerouslySetInnerHTML: {__html: body}}
+	          )
+	        ))
+	    })
+	    return (
+	        React.createElement("div", {styles: {marginTop: 30}}, content)
+	      )
+	  }
+
+	});
+
+	module.exports = Discussion;
+
+/***/ },
+/* 329 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(7);
+	var Link = __webpack_require__(11).Link;
+
+	var GroupHeader = React.createClass({displayName: "GroupHeader",
+
+	  render: function () {
+	    return (
+	      React.createElement("div", null, 
+	        React.createElement("button", {className: "btn btn-success pull-right"}, "Join"), 
+	        React.createElement("h2", null, React.createElement(Link, {to: "group", params: {groupName: this.props.group.name}}, " ", this.props.group.name)), 
+	        React.createElement("p", null, this.props.group.description)
+	      )
+	      )
+	  }
+
+	});
+
+	module.exports= GroupHeader;
 
 /***/ }
 /******/ ]);

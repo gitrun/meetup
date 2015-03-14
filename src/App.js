@@ -16,7 +16,9 @@ var RouteHandler = Router.RouteHandler;
 
 var EventPanel = require('./EventPanel');
 var DiscussionPanel = require('./DiscussionPanel');
-
+var Attendees = require('./Attendees');
+var Discussion = require('./Discussion');
+var GroupHeader = require('./GroupHeader');
 var oauth = require('./oauth');
 
 
@@ -247,46 +249,17 @@ var Event = React.createClass({
 
 
 
-var Attendees = React.createClass({
-  render: function () {
-    console.log('attendees', this.props.attendees);
-    return (
-      <div className="btn-group btn-group-justified">
-      {
-        this.props.attendees.map(function(attendee) {
-          return (
-            <button style={{width: 60}}type="button" className="btn btn-default" data-container="body" data-toggle="popover" data-placement="top" data-content={attendee.login} data-original-title="" title={attendee.login}>
-              <img src={attendee.avatar_url} styles={{width: 30}}/>
-            </button>
-            )
-        })
-      }
-      </div>
-      )
-  }
-});
 
 
-var GroupHeader = React.createClass({
 
-  render: function () {
-    return (
-      <div>
-        <button className="btn btn-success pull-right">Join</button>
-        <h2><Link to="group" params={{groupName: this.props.group.name}}> {this.props.group.name}</Link></h2>
-        <p>{this.props.group.description}</p>
-      </div>
-      )
-  }
 
-});
 
 var routes = (
   <Route handler={App} path="/">
     <DefaultRoute handler={Index}/>
     <Route name="group" path="/groups/:groupName/" handler={Group} />
     <Route name="event" path="/groups/:groupName/events/:eventId/" handler={Event} />
-    <Route name="discussion" path="/groups/:groupName/discussions/:discussionId/" handler={Event} />
+    <Route name="discussion" path="/groups/:groupName/discussions/:discussionId/" handler={Discussion} />
 
   </Route>
 );
