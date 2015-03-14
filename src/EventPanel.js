@@ -16,7 +16,7 @@ var EventPanel = React.createClass({
       }
       var eventDescription = md.render(ev.body);
       return (
-            <div key={ev.id} className="panel panel-default">
+            <div styles={{marginTop: 50}} key={ev.id} className="panel panel-default">
               <div className="panel-heading">
                 <Link to="event" params={{groupName: this.props.group.name, eventId: ev.number}}>
                   <span>{ev.title}</span>

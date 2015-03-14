@@ -6,16 +6,16 @@ var md = new Remarkable();
 var Link = require('react-router').Link;
 
 
-var DiscussionPanel = React.createClass({
+var PollPanel = React.createClass({
 
   render: function () {
-      var discussion = this.props.discussion;
-      var description = md.render(discussion.body);
+      var poll = this.props.poll;
+      var description = md.render(poll.body);
       return (
-            <div styles={{marginTop: 50}} key={discussion.id} className="panel panel-default">
+            <div styles={{marginTop: 50}} key={poll.id} className="panel panel-default">
               <div className="panel-heading">
-                <Link to="discussion" params={{groupName: this.props.group.name, discussionId: discussion.number}}>
-                  <span>{discussion.title}</span>
+                <Link to="poll" params={{groupName: this.props.group.name, pollId: poll.number}}>
+                  <span>{poll.title}</span>
                 </Link>
               </div>
               <div className="panel-body" dangerouslySetInnerHTML={{__html: description}}>
@@ -25,4 +25,4 @@ var DiscussionPanel = React.createClass({
   }
 });
 
-module.exports = DiscussionPanel;
+module.exports = PollPanel;
