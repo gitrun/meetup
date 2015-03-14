@@ -3,8 +3,7 @@ var React = require('react');
 var Github = require('github-api');
 var ReactGridLayout = require('react-grid-layout');
 var StyleSheet = require('react-style')
-var ReactIntl = require('react-intl');
-var FormattedDate = ReactIntl.FormattedDate;
+
 var Remarkable = require('remarkable');
 var md = new Remarkable();
 
@@ -13,6 +12,10 @@ var Route = Router.Route;
 var DefaultRoute = Router.DefaultRoute;
 var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
+
+var EventPanel = require('./EventPanel');
+
+var oauth = require('./oauth');
 
 
 
@@ -39,7 +42,7 @@ var Index = React.createClass({
   },
 
   componentWillMount: function () {
-    this.github = new Github({});
+    this.github = new Github(oauth);
     this.githubUser = this.github.getUser();
   },
 
@@ -94,18 +97,17 @@ var Group = React.createClass({
   getInitialState: function () {
     return {
       events: [],
-      group: {}
+      group: {},
+      selectedTab: 'events'
     }
   },
 
   componentWillMount: function () {
-    this.github = new Github({});
-    this.githubUser = this.github.getUser();
-    this.issues = this.github.getIssues('meetups', this.getParams().groupName);
+    this.github = new Github(oauth);
   },
 
   componentDidMount: function () {
-    this.issues.list({labels: 'event'}, function(err, events) {
+    utils.fetchEvents(this.getParams().groupName, 'event', function(err, events) {
       console.log('events', events);
       this.setState({events: events});
     }.bind(this));
@@ -116,12 +118,19 @@ var Group = React.createClass({
     }.bind(this))
   },
 
+  selectTab: function (name) {
+    this.setState({
+      selectedTab: name
+    });
+  },
   render: function (){
     var events = this.state.events;
     var eventsList = events.map(function (ev) {
       var eventDescription = md.render(ev.body);
       return (<EventPanel ev={ev} group={this.state.group}/>)
     }.bind(this));
+    var discussionsList = [];
+    var pollsList = [];
     var content;
     if (Object.keys(this.state.group).length ) {
       content = <div>
@@ -131,17 +140,31 @@ var Group = React.createClass({
                   </style>
                   <GroupHeader group={this.state.group}/>
                   <div>
-                  <h4>Our upcoming events</h4>
-                  {eventsList}
+                    <ul className="nav nav-tabs">
+                      <li className={this.state.selectedTab === 'events' ? 'active' : ''}><a onClick={this.selectTab.bind(null, 'events')} href="#" data-toggle="tab" aria-expanded="true">Events</a></li>
+                      <li className={this.state.selectedTab === 'discussions' ? 'active' : ''}><a onClick={this.selectTab.bind(null, 'discussions')} href="#" data-toggle="tab" aria-expanded="true">Discussions</a></li>
+                      <li className={this.state.selectedTab === 'polls' ? 'active' : ''}><a onClick={this.selectTab.bind(null, 'polls')} href="#" data-toggle="tab" aria-expanded="true">Polls</a></li>
+                    </ul>
+                  <div className="tab-content">
+                    <div  className={this.state.selectedTab === 'events' ? 'tab-pane fade active in' : 'tab-pane'}>
+                    {eventsList}
+                    </div>
+                    <div className={this.state.selectedTab === 'discussions' ? 'tab-pane fade active in' : 'tab-pane'}>
+                      <p>Coming soon</p>
+                    </div>
+                    <div className={this.state.selectedTab === 'polls' ? 'tab-pane fade active in' : 'tab-pane'}>
+                      <p>Coming soon</p>
+                    </div>
                   </div>
                 </div>
+              </div>
     } else {
       content = <div className="progress">
                 <div className="progress-bar"></div>
                 </div>
     }
     return (<div className="row col-md-8 col-md-offset-2">
-            {content}
+              {content}
             </div>
 
             )
@@ -160,12 +183,12 @@ var Event = React.createClass({
   },
 
   componentWillMount: function () {
-    this.github = new Github({});
+    this.github = new Github(oauth);
     this.githubUser = this.github.getUser();
   },
 
   componentDidMount: function () {
-    utils.fetchEvent(this.github, this.getParams().groupName, this.getParams().eventId, function (err, ev) {
+    utils.fetchEvent(this.getParams().groupName, this.getParams().eventId, function (err, ev) {
       console.log('done', err, ev);
       this.setState({ev: ev});
     }.bind(this));
@@ -201,28 +224,7 @@ var Event = React.createClass({
 
 
 
-var EventPanel = React.createClass({
 
-  render: function () {
-      var ev = this.props.ev;
-      var eventDescription = md.render(ev.body);
-      return (
-            <div key={ev.id} className="panel panel-default">
-              <div className="panel-heading">
-                <Link to="event" params={{groupName: this.props.group.name, eventId: ev.number}}>
-                  <span>{ev.title}</span>
-                </Link>
-                <strong styles={{float:'right'}}>
-                  <FormattedDate value={ev.milestone.due_on} day="numeric"
-                  month="long"
-                  year="numeric" /></strong>
-              </div>
-              <div className="panel-body" dangerouslySetInnerHTML={{__html: eventDescription}}>
-              </div>
-            </div>
-            )
-  }
-});
 
 var GroupHeader = React.createClass({
 

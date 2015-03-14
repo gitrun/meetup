@@ -1,6 +1,6 @@
 var async = require('async');
 var request = require('superagent');
-
+var oauth = require('./oauth');
 
 exports.fetchMeta = function (github, group, callback) {
   var groupRepo = github.getRepo('meetups', group.name);
@@ -48,16 +48,28 @@ exports.fetchGroup = function (github, groupName, callback) {
   })
 };
 
+exports.fetchEvents = function (groupName, type, callback) {
+  var issueUrl = 'https://api.github.com/repos/meetups/' + groupName + '/issues?labels=' + type;
+  var tokenHeader = 'token ' + oauth.token;
+  request.get(issueUrl).set('Authorization', tokenHeader).end(function (err, res) {
+    if (err) {
+      return callback(err);
+    }
+    callback(null, res.body);
+  });
+}
 
-exports.fetchEvent = function (github, groupName, issueNumber, callback) {
+
+exports.fetchEvent = function (groupName, issueNumber, callback) {
   var issueUrl = 'https://api.github.com/repos/meetups/' + groupName + '/issues/' + issueNumber;
-  request.get(issueUrl).end(function (err, res) {
+  var tokenHeader = 'token ' + oauth.token;
+  request.get(issueUrl).set('Authorization', tokenHeader).end(function (err, res) {
     if (err) {
       return callback(err);
     }
     var ev = res.body;
     var commentsUrl = issueUrl + '/comments';
-    request.get(issueUrl).end(function (err, res) {
+    request.get(issueUrl).set('Authorization', tokenHeader).end(function (err, res) {
       if (err) {
         return callback(null, ev);
       }
